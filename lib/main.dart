@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'beranda.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; // Pastikan mengimpor layar beranda di sini
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  Supabase.initialize(
-    url: 'https://oxzvmzutcofwvqpyepey.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94enZtenV0Y29md3ZxcHllcGV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk0MDkyNTIsImV4cCI6MjA1NDk4NTI1Mn0.iEDbyaok5p0qgLaQrzxxXJZGu_VEbORxyi2RR8P4GEs',
-  );
+  await Supabase.initialize(
+      //url dan anonkey dari supabase
+      url:  'https://dbxmbtmnbukghijkwhxu.supabase.co',
+      anonKey:
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRieG1idG1uYnVrZ2hpamt3aHh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYzODQ5NzAsImV4cCI6MjA1MTk2MDk3MH0.SVpjIYFIqFxNPMaQeaxB7jefIGGimEnLmcW39AoFg38');
   runApp(const MyApp());
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -16,7 +19,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: MyHomePage(title: 'Flutter Demo Home Page'), // This is where the title is passed
+      home: MyHomePage(title: 'Halaman Login'),
     );
   }
 }
@@ -30,20 +33,28 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  // Controllers for username and password fields
+  // Controller untuk username dan password
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // Create formKey to validate the form
+  // Membuat formKey untuk validasi form
   final formKey = GlobalKey<FormState>();
 
-  // Function to handle login
+  // Fungsi untuk menangani login
   Future<void> _login() async {
-    // No validation, just navigate to the next screen (Beranda)
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => MyHomePage(title: '')), // Navigate directly to Beranda
-    );
+    // Validasi form sebelum menavigasi
+    if (formKey.currentState?.validate() ?? false) {
+      // Navigasi ke layar beranda setelah login berhasil
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => Beranda()), // Navigasi ke halaman beranda
+      );
+    } else {
+      // Tampilkan pesan kesalahan jika form tidak valid
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Mohon lengkapi form dengan benar!"),
+      ));
+    }
   }
 
   @override
@@ -57,7 +68,7 @@ class _MyHomePageState extends State<MyHomePage> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Image
+                // Gambar
                 Image.asset(
                   'assets/coffe.png',
                   height: 135,
@@ -95,6 +106,12 @@ class _MyHomePageState extends State<MyHomePage> {
                           prefixIcon: Icon(Icons.person),
                           border: OutlineInputBorder(),
                         ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Username tidak boleh kosong';
+                          }
+                          return null;
+                        },
                       ),
                       SizedBox(height: 30),
                       TextFormField(
@@ -106,13 +123,16 @@ class _MyHomePageState extends State<MyHomePage> {
                           prefixIcon: Icon(Icons.lock),
                           border: OutlineInputBorder(),
                         ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Password tidak boleh kosong';
+                          }
+                          return null;
+                        },
                       ),
                       SizedBox(height: 30),
                       ElevatedButton(
-                        onPressed: () {
-                          // Just proceed to the next screen
-                          _login();
-                        },
+                        onPressed: _login, // Menangani login
                         child: Text('Login'),
                       ),
                     ],
@@ -122,14 +142,6 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => MyHomePage(title: 'Beranda')),
-          );
-        },
       ),
     );
   }

@@ -1,66 +1,119 @@
+
 import 'package:flutter/material.dart';
-import 'package:ukk_kasir/beranda.dart';
+import 'package:ukk_kasir/Produk/indexproduk.dart';
+import 'package:ukk_kasir/main.dart';
 
-void main() {
-  runApp(MaterialApp(
-    theme: ThemeData(primarySwatch: Colors.brown),
-    home: MyHomePage(title: 'Beranda'),
-  ));
-}
 
-class MyHomePage extends StatefulWidget {
-  final String title;
-  MyHomePage({Key? key, required this.title}) : super(key: key);
+class Beranda extends StatefulWidget {
+  final cart;
+  const Beranda({super.key, this.cart});
 
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  State<Beranda> createState() => _homepageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  String? selectedOrderType;
-  bool isberandaVisible = false;
-  Map<String, int> cart = {};
+class _homepageState extends State<Beranda> {
+  // GlobalKey untuk Scaffold agar dapat membuka drawer
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text(widget.title),
-        backgroundColor: Color.fromARGB(255, 212, 106, 132),
-        foregroundColor: Colors.white,
-        leading: IconButton(icon: Icon(Icons.menu), onPressed: () {}),
-        actions: [
-          IconButton(icon: Icon(Icons.search), onPressed: () {}),
-        ],
-        bottom: TabBar(
-          tabs: [
-            Tab(icon: Icon(Icons.shopping_bag, color: Colors.brown), text: 'Produk'),
-            Tab(icon: Icon(Icons.person, color: Colors.white), text: 'penjualan'),
-            
-          ],
+    return DefaultTabController(
+      length: 4,
+      child: Scaffold(
+        key: _scaffoldKey, // Set key untuk Scaffold
+        appBar: AppBar(
+          bottom: TabBar(
+            tabs: [
+              Tab(
+                icon: Icon(Icons.inventory, color: Colors.white),
+                child: Text('Produk',
+                    style: TextStyle(fontSize: 12, color: Colors.white)),
+              ),
+              Tab(
+                icon: Icon(Icons.people, color: Colors.white),
+                child: Text('Pelanggan',
+                    style: TextStyle(fontSize: 12, color: Colors.white)),
+              ),
+              Tab(
+                icon: Icon(Icons.shopping_cart, color: Colors.white),
+                child: Text('Penjualan',
+                    style: TextStyle(fontSize: 12, color: Colors.white)),
+              ),
+              Tab(
+                icon: Icon(Icons.account_balance_wallet, color: Colors.white),
+                child: Text('Detail Penjualan',
+                    style: TextStyle(fontSize: 12, color: Colors.white)),
+              ),
+            ],
+            // labelColor: Colors.red,
+          ),
+          backgroundColor: Colors.brown[300],
+          foregroundColor: Colors.white,
+          title: const Text("D'Qasir"),
+          centerTitle: true,
+          leading: IconButton(
+            icon: const Icon(Icons.menu), // Ikon menu untuk membuka drawer
+            onPressed: () {
+              _scaffoldKey.currentState
+                  ?.openDrawer(); // Membuka drawer menggunakan key
+            },
+          ),
+        ),
+        drawer: Drawer(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: <Widget>[
+              DrawerHeader(
+                decoration: BoxDecoration(
+                  color: Colors.brown[300],
+                ),
+                child: Text(
+                  'Menu',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 24,
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: Icon(Icons.home),
+                title: Text('Beranda'),
+                onTap: () {
+                  Navigator.pop(context); // Menutup drawer
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.app_registration),
+                title: Text('Registrasi'),
+                onTap: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => Beranda(),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.arrow_back),
+                title: Text('Logout'),
+                onTap: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MyHomePage(title: '',),
+                    ),
+                  ); // Navigasi ke halaman awal
+                },
+              ),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children:  [divyaproduk(),],
         ),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: ['produk', 'Jenis buku', 'Costemers']
-                  .map((label) => _buildCategoryButton(label))
-                  .toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryButton(String label) {
-    return ElevatedButton(
-      onPressed: () {},
-      child: Text(label),
     );
   }
 }
