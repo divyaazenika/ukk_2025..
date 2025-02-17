@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:ukk_kasir/Produk/indexproduk.dart';
 import 'package:ukk_kasir/main.dart';
+import 'package:ukk_kasir/pelanggan/indexpelanggan.dart';
+import 'package:ukk_kasir/registrasi/adminhomepage.dart';
 
 
 class Beranda extends StatefulWidget {
@@ -50,7 +52,7 @@ class _homepageState extends State<Beranda> {
           ),
           backgroundColor: Colors.brown[300],
           foregroundColor: Colors.white,
-          title: const Text("D'Qasir"),
+          title: const Text('Beranda'),
           centerTitle: true,
           leading: IconButton(
             icon: const Icon(Icons.menu), // Ikon menu untuk membuka drawer
@@ -90,7 +92,7 @@ class _homepageState extends State<Beranda> {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => Beranda(),
+                      builder: (context) => AdminHomePage(),
                     ),
                   );
                 },
@@ -111,7 +113,7 @@ class _homepageState extends State<Beranda> {
           ),
         ),
         body: TabBarView(
-          children:  [divyaproduk(),],
+          children:  [divyaproduk(), Indexpelanggan(),],
         ),
       ),
     );

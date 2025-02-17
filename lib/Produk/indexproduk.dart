@@ -43,7 +43,7 @@ class _divyaprodukState extends State<divyaproduk> {
 
   Future<void> deleteProduk(int id) async {
     try {
-      await Supabase.instance.client.from('produk').delete().eq('ProdukID', id);
+      await Supabase.instance.client.from('produk').delete().eq('produkID', id);
       fetchProduk();
     } catch (e) {
       print('error deleting produk: $e');
@@ -51,10 +51,10 @@ class _divyaprodukState extends State<divyaproduk> {
   }
 
   Future<void> tambahKePenjualan(
-      int ProdukID, String NamaProduk, int Harga, int Stok) async {
+      int produkID, String NamaProduk, int Harga, int Stok) async {
     try {
       final response = await Supabase.instance.client.from('penjualan').insert({
-        'ProdukID': ProdukID,
+        'produkID': produkID,
         'NamaProduk': NamaProduk,
         'Harga': Harga,
         'Stok': Stok,
@@ -160,15 +160,15 @@ class _divyaprodukState extends State<divyaproduk> {
                                     icon: const Icon(Icons.edit,
                                         color: Colors.blueAccent),
                                     onPressed: () {
-                                      final ProdukID = prd['ProdukID'] ??
+                                      final produkID = prd['produkID'] ??
                                           0; // Pastikan ini sesuai dengan kolom di database
-                                      if (ProdukID != 0) {
+                                      if (produkID != 0) {
                                         Navigator.push(
                                             context,
                                             MaterialPageRoute(
                                                 builder: (context) =>
                                                     updateproduk(
-                                                        ProdukID: ProdukID)));
+                                                        produkID: produkID)));
                                       } else {
                                         print('ID produk tidak valid');
                                       }
@@ -193,7 +193,7 @@ class _divyaprodukState extends State<divyaproduk> {
                                               ),
                                               TextButton(
                                                 onPressed: () {
-                                                  deleteProduk(prd['ProdukID']);
+                                                  deleteProduk(prd['produkID']);
                                                   Navigator.pop(context);
                                                 },
                                                 child: const Text('Hapus'),
@@ -215,7 +215,7 @@ class _divyaprodukState extends State<divyaproduk> {
         floatingActionButton: FloatingActionButton(
             onPressed: () {
               Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => Beranda()));
+                  MaterialPageRoute(builder: (context) => AddProduk()));
             },
             child: Icon(
               Icons.add,

@@ -1,61 +1,61 @@
 import 'package:flutter/material.dart';
+import 'package:ukk_kasir/beranda.dart';
 import 'package:ukk_kasir/main.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:ukk_kasir/beranda.dart';
+import 'package:ukk_kasir/pelanggan/indexpelanggan.dart';
+import 'package:ukk_kasir/pelanggan/insertpelanggan.dart';
 
+class updatePelanggan extends StatefulWidget {
+  final int PelangganID;
 
-class updateproduk extends StatefulWidget {
-  final int produkID;
-  const updateproduk({super.key, required this.produkID});
+  const updatePelanggan({super.key, required this.PelangganID});
 
   @override
-  State<updateproduk> createState() => _updateprodukState();
+  State<updatePelanggan> createState() => _EditPelangganState();
 }
 
-class _updateprodukState extends State<updateproduk> {
-  
-  final _nmproduk = TextEditingController();
-  final _harga = TextEditingController();
-  final _stok = TextEditingController();
+class _EditPelangganState extends State<updatePelanggan> {
+  final _nmplg = TextEditingController();
+  final _alamat = TextEditingController();
+  final _notlp = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  
   @override
   void initState() {
     super.initState();
-    _loadProdukData();
+    _loadPelangganData();
   }
 
-  // Fungsi untuk memuat data produk berdasarkan ID
-  Future<void> _loadProdukData() async {
+  // Fungsi untuk memuat data pelanggan berdasarkan ID
+  Future<void> _loadPelangganData() async {
     final data = await Supabase.instance.client
-        .from('produk')
-        .select()
-        .eq('produkID', widget.produkID)
-        .single();
-  
+      .from('pelanggan')
+      .select()
+      .eq('PelangganID', widget.PelangganID)
+      .single();
+
     setState(() {
-      _nmproduk.text = data['NamaProduk'] ?? '';
-      _harga.text = data['Harga']?.toString() ?? '';
-      _stok.text = data['Stok']?.toString() ?? '';
+      _nmplg.text = data['NamaPelanggan'] ?? '';
+      _alamat.text = data['Alamat'] ?? '';
+      _notlp.text = data['NomorTelepon'] ?? '';
     });
   }
 
-  // EditProduk.dart
-  Future<void> updateProduk() async {
+  // EditPelanggan.dart
+  Future<void> updatePelanggan() async {
     if (_formKey.currentState!.validate()) {
-      // Melakukan update data produk ke database
-      await Supabase.instance.client.from('produk').update({
-        'NamaProduk': _nmproduk.text,
-        'Harga': _harga.text,
-        'Stok': _stok.text,
-      }).eq('produkID', widget.produkID);
+      // Melakukan update data pelanggan ke database
+      await Supabase.instance.client.from('pelanggan').update({
+        'NamaPelanggan': _nmplg.text,
+        'Alamat': _alamat.text,
+        'NomorTelepon': _notlp.text,
+      }).eq('Pelangganid', widget.PelangganID);
 
-      // Navigasi ke ProdukTab setelah update, dengan menghapus semua halaman sebelumnya dari stack
+      // Navigasi ke PelangganTab setelah update, dengan menghapus semua halaman sebelumnya dari stack
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => Beranda()),
-        (route) => false, // Hapus semua halaman sebelumnya
+        (route) => false, // Hapus semua halaman sebelumnyar
       );
     }
   }
@@ -64,7 +64,7 @@ class _updateprodukState extends State<updateproduk> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Produk'),
+        title: const Text('Edit Pelanggan'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -74,63 +74,55 @@ class _updateprodukState extends State<updateproduk> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextFormField(
-                controller: _nmproduk,
+                controller: _nmplg,
                 decoration: const InputDecoration(
-                  labelText: 'Nama Produk',
+                  labelText: 'Nama Pelanggan',
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Nama tidak boleh kosong';
                   }
-
                   return null;
                 },
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: _harga,
+                controller: _alamat,
                 decoration: const InputDecoration(
-                  labelText: 'Harga',
+                  labelText: 'Alamat',
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Harga tidak boleh kosong';
-                  }
-                   if (int.tryParse(value) == null) {
-                    return 'Harga harus berupa angka';
+                    return 'Alamat tidak boleh kosong';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: _stok,
+                controller: _notlp,
                 decoration: const InputDecoration(
-                  labelText: 'Stok',
+                  labelText: 'Nomor Telepon',
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Stok telepon tidak boleh kosong';
-                  }
-                    if (int.tryParse(value) == null) {
-                    return 'Harga harus berupa angka';
+                    return 'Nomor telepon tidak boleh kosong';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: updateProduk,
+                onPressed: updatePelanggan,
                 child: const Text('Update'),
               ),
             ],
           ),
         ),
       ),
-
     );
   }
 }
