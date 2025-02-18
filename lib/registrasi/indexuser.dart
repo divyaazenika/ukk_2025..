@@ -102,7 +102,7 @@ class _UserTabState extends State<UserTab> {
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
                                   IconButton(
-                                    icon: Icon(Icons.edit, color: Colors.blue),
+                                    icon: Icon(Icons.edit, color: Colors.brown),
                                     onPressed: () {
                                       final Userid = plg['Userid'] ?? 0; // Pastikan ini sesuai dengan kolom di database
                                         if (Userid != 0) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ukk_kasir/pelanggan/indexpelanggan.dart';
 import 'package:ukk_kasir/Produk/indexproduk.dart';
 import 'package:ukk_kasir/beranda.dart';
+import 'package:ukk_kasir/penjualan/indexpenjualan.dart';
 import 'package:ukk_kasir/registrasi/indexuser.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ukk_kasir/registrasi/insertuser.dart';
@@ -71,7 +72,7 @@ class AdminHomePage extends StatelessWidget {
                 leading: Icon(Icons.arrow_back),
                 title: Text('Log Out'),
                 onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => UserInsert()));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => Beranda()));
                 },
               ),
             ],
@@ -81,6 +82,7 @@ class AdminHomePage extends StatelessWidget {
           children: [
             divyaproduk(),
             Indexpelanggan(),
+            IndexPenjualan(),
           ],
         ),
       ),

@@ -1,10 +1,10 @@
-
 import 'package:flutter/material.dart';
 import 'package:ukk_kasir/Produk/indexproduk.dart';
+import 'package:ukk_kasir/detailpenjualan/index.dart';
 import 'package:ukk_kasir/main.dart';
 import 'package:ukk_kasir/pelanggan/indexpelanggan.dart';
+import 'package:ukk_kasir/penjualan/indexpenjualan.dart';
 import 'package:ukk_kasir/registrasi/adminhomepage.dart';
-
 
 class Beranda extends StatefulWidget {
   final cart;
@@ -17,6 +17,8 @@ class Beranda extends StatefulWidget {
 class _homepageState extends State<Beranda> {
   // GlobalKey untuk Scaffold agar dapat membuka drawer
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  
 
   @override
   Widget build(BuildContext context) {
@@ -57,10 +59,18 @@ class _homepageState extends State<Beranda> {
           leading: IconButton(
             icon: const Icon(Icons.menu), // Ikon menu untuk membuka drawer
             onPressed: () {
-              _scaffoldKey.currentState
-                  ?.openDrawer(); // Membuka drawer menggunakan key
+              _scaffoldKey.currentState?.openDrawer(); // Membuka drawer menggunakan key
             },
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.search, color: Colors.white), // Menambahkan ikon pencarian
+              onPressed: () {
+                // Logika pencarian bisa ditambahkan di sini
+                print('Search icon clicked');
+              },
+            ),
+          ],
         ),
         drawer: Drawer(
           child: ListView(
@@ -113,7 +123,11 @@ class _homepageState extends State<Beranda> {
           ),
         ),
         body: TabBarView(
-          children:  [divyaproduk(), Indexpelanggan(),],
+          children:  [divyaproduk(), 
+                      Indexpelanggan(),
+                      IndexPenjualan(),
+                      IndexDetail(),
+                      ],
         ),
       ),
     );
