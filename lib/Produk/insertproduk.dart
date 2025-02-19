@@ -1,58 +1,97 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ukk_kasir/Produk/indexproduk.dart';
 import 'package:ukk_kasir/beranda.dart';
+import 'package:ukk_kasir/detailpenjualan/index.dart';
+import 'package:intl/intl.dart'; // Import intl package
 
-class AddProduk extends StatefulWidget {
-  const AddProduk({super.key});
+class addproduk extends StatefulWidget {
+  const addproduk({super.key});
 
   @override
-  State<AddProduk> createState() => _AddProdukState();
+  State<addproduk> createState() => _addprodukState();
 }
 
-class _AddProdukState extends State<AddProduk> {
-  final _nmprd = TextEditingController();
-  final _harga = TextEditingController();
-  final _stok = TextEditingController();
+class _addprodukState extends State<addproduk> {
+  final TextEditingController NamaProdukController = TextEditingController();
+  final TextEditingController HargaController = TextEditingController();
+  final TextEditingController StokController = TextEditingController();
+  final TextEditingController JumlahController = TextEditingController();  // Input untuk jumlah produk yang dibeli
   final _formKey = GlobalKey<FormState>();
 
-  Future<void> produk() async {
-    if (_formKey.currentState!.validate()) {
-      final NamaProduk = _nmprd.text;
-      final Harga = int.tryParse(_harga.text);
-      final Stok = int.tryParse(_stok.text);
+  @override
+  void dispose() {
+    NamaProdukController.dispose();
+    HargaController.dispose();
+    StokController.dispose();
+    JumlahController.dispose();  // Dispose untuk JumlahController
+    super.dispose();
+  }
 
-      if (Harga == null || Stok == null) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Harga dan Stok harus berupa angka yang valid!'),
-          backgroundColor: Colors.brown,
-        ));
+  // Format harga menjadi format dengan titik
+  String formatHarga(int harga) {
+    final formatter = NumberFormat('#,###');
+    return formatter.format(harga);  // Format dengan ribuan pemisah
+  }
+
+  Future<void> tambahProduk() async {
+    if (_formKey.currentState!.validate()) {
+      final String NamaProduk = NamaProdukController.text.trim();
+      final int? Harga = int.tryParse(HargaController.text.trim());
+      final int? Stok = int.tryParse(StokController.text.trim());
+      final int? Jumlah = int.tryParse(JumlahController.text.trim()); // Jumlah produk yang dibeli
+
+      if (Harga == null || Stok == null || Jumlah == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Harga, Stok, dan Jumlah harus berupa angka')),
+        );
+        return;
+      }
+
+      // Validasi agar jumlah yang dibeli tidak lebih dari stok yang tersedia
+      if (Jumlah > Stok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Jumlah pembelian tidak boleh melebihi stok yang tersedia')),
+        );
         return;
       }
 
       try {
-        // Memasukkan data ke tabel 'produk'
-        await Supabase.instance.client.from('produk').insert({
+        final response = await Supabase.instance.client.from('produk').insert({
           'NamaProduk': NamaProduk,
           'Harga': Harga,
           'Stok': Stok,
-        });
+        }).select();
 
-        // Jika sukses, tampilkan pesan dan navigasi ke halaman beranda
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Produk berhasil ditambahkan!'),
-          backgroundColor: Colors.green,
-        ));
+        if (response.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Produk Berhasil ditambahkan')),
+          );
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const Beranda()),
-        );
+          // Update stok produk setelah penambahan
+          final updatedStok = Stok - Jumlah;  // Mengurangi stok sesuai jumlah pembelian
+          await Supabase.instance.client.from('produk').update({
+            'Stok': updatedStok,
+          }).eq('NamaProduk', NamaProduk);
+
+          await Future.delayed(const Duration(seconds: 2));
+
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => RiwayatPenjualan()),
+            );
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Gagal menambahkan produk')),
+          );
+        }
       } catch (e) {
-        print('Error inserting product: $e');
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Gagal menambah produk: $e'),
-          backgroundColor: Colors.brown,
-        ));
+        print('Error: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Terjadi kesalahan, silahkan coba lagi')),
+        );
       }
     }
   }
@@ -68,60 +107,85 @@ class _AddProdukState extends State<AddProduk> {
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextFormField(
-                controller: _nmprd,
+                controller: NamaProdukController,
                 decoration: const InputDecoration(
                   labelText: 'Nama Produk',
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Nama produk tidak boleh kosong';
+                    return 'Nama Produk Wajib Diisi';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: _harga,
-                keyboardType: TextInputType.number,
+                controller: HargaController,
                 decoration: const InputDecoration(
                   labelText: 'Harga',
                   border: OutlineInputBorder(),
                 ),
+                keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Harga tidak boleh kosong';
+                    return 'Harga Wajib Diisi';
                   }
-                    if (int.tryParse(value) == null) {
-                    return 'Harga harus berupa angka';
+                  return null;
+                },
+                onChanged: (value) {
+                  // Format harga saat diketik
+                  final harga = int.tryParse(value);
+                  if (harga != null) {
+                    HargaController.value = HargaController.value.copyWith(
+                      text: formatHarga(harga),  // Format harga dengan titik
+                      selection: TextSelection.collapsed(offset: HargaController.text.length),
+                    );
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: StokController,
+                decoration: const InputDecoration(
+                  labelText: 'Stok',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Stok Wajib Diisi';
+                  }
+                  if (int.tryParse(value) == null) {
+                    return 'Stok harus berupa angka';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: _stok,
-                keyboardType: TextInputType.number,
+                controller: JumlahController,  // Input jumlah yang dibeli
                 decoration: const InputDecoration(
-                  labelText: 'Stok',
+                  labelText: 'Jumlah Pembelian',
                   border: OutlineInputBorder(),
                 ),
+                keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Stok tidak boleh kosong';
+                    return 'Jumlah Pembelian Wajib Diisi';
                   }
-                    if (int.tryParse(value) == null) {
-                    return 'Harga harus berupa angka';
+                  if (int.tryParse(value) == null) {
+                    return 'Jumlah Pembelian harus berupa angka';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: produk,
+                onPressed: tambahProduk,
                 child: const Text('Tambah'),
               ),
             ],

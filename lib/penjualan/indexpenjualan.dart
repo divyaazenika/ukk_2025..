@@ -1,188 +1,164 @@
 import 'package:flutter/material.dart';
-// import 'package:kasirr/admin/home_admin.dart';
-import 'package:ukk_kasir/beranda.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:ukk_kasir/pelanggan/updatepelanggan.dart';
-import 'package:ukk_kasir/penjualan/insert.dart';
-import 'package:ukk_kasir/penjualan/updatepenjualan.dart';
+import 'package:ukk_kasir/Penjualan/strukbelanja.dart';// Pastikan import StrukBelanjaPage
 
-class IndexPenjualan extends StatefulWidget {
-  const IndexPenjualan({super.key});
-
+class PenjualanIndex extends StatefulWidget {
   @override
-  State<IndexPenjualan> createState() => _IndexPenjualanState();
+  _PenjualanIndexState createState() => _PenjualanIndexState();
 }
 
-class _IndexPenjualanState extends State<IndexPenjualan> {
-  List<Map<String, dynamic>> penjualan = [];
+class _PenjualanIndexState extends State<PenjualanIndex> {
+  final SupabaseClient supabase = Supabase.instance.client;
+  List<Map<String, dynamic>> produk = [];
+  List<Map<String, dynamic>> selectedProduk = []; // Produk yang dipilih
 
   @override
   void initState() {
     super.initState();
-    fetchPenjualan();
+    fetchProduk();
   }
 
-  Future<void> fetchPenjualan() async {
-    try {
-      final response =
-          await Supabase.instance.client.from('penjualan').select();
-      setState(() {
-        penjualan = List<Map<String, dynamic>>.from(response);
-      });
-    } catch (e) {
-      print('Error fetching penjualan: $e');
-    }
+  Future<void> fetchProduk() async {
+    final response = await supabase.from('produk').select();
+    setState(() {
+      produk = List<Map<String, dynamic>>.from(response);
+    });
   }
 
-  Future<void> deletePenjualan(int id) async {
-    try {
-      await Supabase.instance.client
-          .from('penjualan')
-          .delete()
-          .eq('PenjualanID', id);
-      fetchPenjualan();
-    } catch (e) {
-      print('Error deleting penjualan: $e');
-    }
+  // Toggle checkbox dan mengelola jumlah produk
+  void toggleSelection(Map<String, dynamic> item, bool isSelected, {int quantity = 1}) {
+    setState(() {
+      if (isSelected) {
+        selectedProduk.add({...item, 'JumlahProduk': quantity});
+      } else {
+        selectedProduk.removeWhere((p) => p['produkID'] == item['produkID']);
+      }
+    });
   }
+
+  // Mengupdate jumlah produk
+  void updateQuantity(Map<String, dynamic> item, int quantity) {
+  setState(() {
+    // Pastikan jumlah produk tidak kurang dari 1
+    if (quantity >= 1) {
+      final index = selectedProduk.indexWhere((p) => p['produkID'] == item['produkID']);
+      if (index != -1) {
+        selectedProduk[index]['JumlahProduk'] = quantity; // Update jumlah produk
+      }
+    }
+  });
+}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar( 
-      ),
-      body: Container(
-        color: Colors.white,
-        child: penjualan.isEmpty
-            ? const Center(
-                child: Text(
-                  'Tidak ada Riwayat Penjualan',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white),
-                ),
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.all(8),
-                itemCount: penjualan.length,
-                itemBuilder: (context, index) {
-                  final langgan = penjualan[index];
-                  return SizedBox(
-                    height: 145,
-                    child: Card(
-                      elevation: 4,
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(height: 5),
-                                  Text(
-                                    langgan['TanggalPenjualan'] ?? 'Tidak tersedia',
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 20),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    langgan['TotalHarga']?.toString() ?? 'Tidak tersedia',
-                                    style: const TextStyle(
-                                        fontStyle: FontStyle.italic,
-                                        fontSize: 15,
-                                        color: Colors.grey),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    langgan['PelangganID']?.toString() ?? 'Tidak tersedia',
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14),
-                                    textAlign: TextAlign.justify,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Row(
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.edit, color: Colors.brown, size: 28),
-                                      onPressed: () {
-                                        final PenjualanID = langgan['PenjualanID'] ?? 0;
-                                        if (PenjualanID != 0) {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  UpdatePenjualan(PenjualanID: PenjualanID),
-                                            ),
-                                          );
-                                        } else {
-                                          print('ID Penjualan tidak valid');
-                                        }
-                                      },
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete, color: Color(0xFF8D6E63)),
-                                      onPressed: () {
-                                        showDialog(
-                                          context: context,
-                                          builder: (BuildContext context) {
-                                            return AlertDialog(
-                                              title: const Text('Hapus Produk'),
-                                              content: const Text(
-                                                  'Apakah Anda yakin ingin menghapus produk ini?'),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed: () => Navigator.pop(context),
-                                                  child: const Text('Batal'),
-                                                ),
-                                                TextButton(
-                                                  onPressed: () {
-                                                    deletePenjualan(langgan['PenjualanID']);
-                                                    Navigator.pop(context);
-                                                  },
-                                                  child: const Text(
-                                                    'Hapus',
-                                                    style: TextStyle(
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            );
-                                          },
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+      appBar: AppBar(title: Text('Pilih Produk')),
+      body: ListView.builder(
+        itemCount: produk.length,
+        itemBuilder: (context, index) {
+          final item = produk[index];
+          bool isSelected = selectedProduk.any((p) => p['produkID'] == item['produkID']);
+          int quantity = isSelected
+              ? selectedProduk.firstWhere((p) => p['produkID'] == item['produkID'])['JumlahProduk']
+              : 1;
+
+          return ListTile(
+            title: Text(item['NamaProduk']),
+            subtitle: Text('Harga: Rp ${item['Harga']} | Stok: ${item['Stok']}'),
+            trailing: isSelected
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.remove),
+                        onPressed: () {
+                          if (quantity > 0) {
+                            updateQuantity(item, quantity - 1);
+                          }
+                        },
                       ),
-                    ),
-                  );
-                },
-              ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (context) => const InsertPenjualan()));
+                      Text('$quantity'),
+                      IconButton(
+                        icon: Icon(Icons.add),
+                        onPressed: () {
+                          updateQuantity(item, quantity + 1);
+                        },
+                      ),
+                    ],
+                  )
+                : IconButton(
+                    icon: Icon(Icons.add_shopping_cart),
+                    onPressed: () => toggleSelection(item, true, quantity: quantity),
+                  ),
+            onTap: () {
+              // Menampilkan dialog untuk memilih jumlah produk
+              if (isSelected) {
+                toggleSelection(item, false);
+              } else {
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    int selectedQty = 1;
+                    return AlertDialog(
+                      title: Text('Masukkan Jumlah Produk'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('Jumlah:'),
+                          TextField(
+                            keyboardType: TextInputType.number,
+                            onChanged: (value) {
+                              selectedQty = int.tryParse(value) ?? 1;
+                            },
+                            decoration: InputDecoration(hintText: 'Jumlah produk'),
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            toggleSelection(item, true, quantity: selectedQty);
+                            Navigator.pop(context);
+                          },
+                          child: Text('Konfirmasi'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text('Batal'),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              }
+            },
+          );
         },
-        backgroundColor: Colors.brown[800],
-        child: const Icon(Icons.add, color: Colors.white),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+  onPressed: selectedProduk.isEmpty
+      ? null // Nonaktifkan jika tidak ada yang dipilih
+      : () {
+          // Menghitung total harga
+          int totalHarga = selectedProduk.fold(0, (sum, item) {
+            int harga = item['Harga'] ?? 0;
+            int jumlah = item['JumlahProduk'] ?? 0;
+            return sum + (harga * jumlah);
+          });
+
+          // Pindah ke halaman StrukPage dengan membawa data yang diperlukan
+           Navigator.push(
+            context,
+           MaterialPageRoute(
+      builder: (context) => StrukPage(selectedProduk: selectedProduk, totalHarga: totalHarga),       
+           ),
+           );
+        },
+  label: Text("Lanjutkan"),
+  icon: Icon(Icons.shopping_cart),
+  backgroundColor: selectedProduk.isEmpty ? Colors.grey : Colors.brown,
+     ),
+
     );
   }
 }

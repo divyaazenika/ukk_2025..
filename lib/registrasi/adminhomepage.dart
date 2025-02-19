@@ -80,9 +80,9 @@ class AdminHomePage extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-            divyaproduk(),
-            Indexpelanggan(),
-            IndexPenjualan(),
+            ProdukIndex(),
+            PelangganIndex(),
+            PenjualanIndex(),
           ],
         ),
       ),

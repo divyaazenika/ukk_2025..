@@ -1,22 +1,21 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ukk_kasir/Produk/Beliproduk.dart';
 import 'package:ukk_kasir/Produk/insertproduk.dart';
 import 'package:ukk_kasir/Produk/updateproduk.dart';
 import 'package:ukk_kasir/beranda.dart';
 
-class divyaproduk extends StatefulWidget {
-  const divyaproduk({super.key});
-
+class ProdukIndex extends StatefulWidget {
   @override
-  State<divyaproduk> createState() => _divyaprodukState();
+  _ProdukIndexState createState() => _ProdukIndexState();
 }
 
-class _divyaprodukState extends State<divyaproduk> {
+class _ProdukIndexState extends State<ProdukIndex> {
+  final SupabaseClient supabase = Supabase.instance.client;
   List<Map<String, dynamic>> produk = [];
-  List<Map<String, dynamic>> cart = [];
-  //keranjang
-  bool isLoading = true;
+  String _searchQuery = "";
+
   @override
   void initState() {
     super.initState();
@@ -24,202 +23,104 @@ class _divyaprodukState extends State<divyaproduk> {
   }
 
   Future<void> fetchProduk() async {
-    setState(() {
-      isLoading = true;
-    });
     try {
-      final response = await Supabase.instance.client.from('produk').select();
+      final response = await supabase.from('produk').select();
       setState(() {
         produk = List<Map<String, dynamic>>.from(response);
-        isLoading = false;
       });
     } catch (e) {
-      print('error fetching produk: $e');
-      setState(() {
-        isLoading = false;
-      });
+      print('❌ Error: $e');
     }
   }
 
   Future<void> deleteProduk(int id) async {
-    try {
-      await Supabase.instance.client.from('produk').delete().eq('produkID', id);
-      fetchProduk();
-    } catch (e) {
-      print('error deleting produk: $e');
-    }
+    await supabase.from('produk').delete().eq('ProdukID', id);
+    fetchProduk();
   }
-
-  Future<void> tambahKePenjualan(
-      int produkID, String NamaProduk, int Harga, int Stok) async {
-    try {
-      final response = await Supabase.instance.client.from('penjualan').insert({
-        'produkID': produkID,
-        'NamaProduk': NamaProduk,
-        'Harga': Harga,
-        'Stok': Stok,
-         // Hitung total harga
-        'Tanggal': DateTime.now().toIso8601String(), // Tambahkan tanggal
-      });
-
-      if (response != null) {
-        print('Produk berhasil ditambah ke penjualan.');
-      }
-    } catch (e) {
-      print('Gagal menambah ke penjualan: $e');
-    }
-  }
-
-  void _addToCart(Map<String, dynamic> prd) {
-    setState(() {
-      cart.add(prd);
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-          content:
-              Text('Produk ${prd['NamaProduk']} ditambahkan ke keranjang')),
-    );
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => Beranda(
-                  cart: cart,
-                )));
-  }
-
-  // void _goToCart() {
-  //   Navigator.push(
-  //     context,
-  //     MaterialPageRoute(
-  //       builder: (context) => indexpenjualan(cart: cart),
-  //     ),
-  //   );
-  // }
 
   @override
   Widget build(BuildContext context) {
+    List<Map<String, dynamic>> filteredProduk = produk
+        .where((item) =>
+            item['NamaProduk'].toLowerCase().contains(_searchQuery.toLowerCase()))
+        .toList();
+
     return Scaffold(
-        body: isLoading
-            ? Center(
-            )
-            : produk.isEmpty
-                ? Center(
-                    child: Text(
-                      'tidak ada produk',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                  )
+      appBar: AppBar(title: Text('Daftar Produk')),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              decoration: InputDecoration(
+                labelText: 'Cari Produk...',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+            ),
+          ),
+          Expanded(
+            child: filteredProduk.isEmpty
+                ? Center(child: Text('Produk tidak ditemukan'))
                 : ListView.builder(
-                    padding: EdgeInsets.all(8),
-                    itemCount: produk.length,
+                    itemCount: filteredProduk.length,
                     itemBuilder: (context, index) {
-                      final prd = produk[index];
+                      final item = filteredProduk[index];
+
                       return Card(
-                        elevation: 4,
-                        margin: EdgeInsets.symmetric(vertical: 8),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        child: Padding(
-                          padding: EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        child: ListTile(
+                          title: Text(item['NamaProduk']),
+                          subtitle: Text('Harga: ${item['Harga']} | Stok: ${item['Stok']}'),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(prd['NamaProduk'] ?? 'Nama Tidak Tersedia',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 20,
-                                  )),
-                              // SizedBox(height: 4),
-                              Text(
-                                prd['Harga'] != null
-                                    ? prd['Harga'].toString()
-                                    : 'Harga Tidak Tersedia',
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontStyle: FontStyle.italic,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              // SizedBox(height: 20),
-                              Text(
-                                prd['Stok'] != null
-                                    ? prd['Stok'].toString()
-                                    : 'Stok Tidak Tersedia',
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontStyle: FontStyle.italic,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              const Divider(),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit,
-                                        color: Colors.blueAccent),
-                                    onPressed: () {
-                                      final produkID = prd['produkID'] ??
-                                          0; // Pastikan ini sesuai dengan kolom di database
-                                      if (produkID != 0) {
-                                        Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (context) =>
-                                                    updateproduk(
-                                                        produkID: produkID)));
-                                      } else {
-                                        print('ID produk tidak valid');
-                                      }
-                                    },
+                              IconButton(
+                                icon: Icon(Icons.edit, color: Colors.blue),
+                                onPressed: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => UpdateProduk(
+                                      produk: item,
+                                      refreshProduk: fetchProduk,
+                                    ),
                                   ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete,
-                                        color: Color.fromARGB(255, 145, 131, 92)),
-                                    onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (BuildContext context) {
-                                          return AlertDialog(
-                                            title: const Text('Hapus Produk'),
-                                            content: const Text(
-                                                'Apakah Anda yakin ingin menghapus produk ini?'),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () =>
-                                                    Navigator.pop(context),
-                                                child: const Text('Batal'),
-                                              ),
-                                              TextButton(
-                                                onPressed: () {
-                                                  deleteProduk(prd['produkID']);
-                                                  Navigator.pop(context);
-                                                },
-                                                child: const Text('Hapus'),
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                      );
-                                    },
-                                  ),
-                                ],
+                                ).then((_) => fetchProduk()),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.delete, color: Colors.red),
+                                onPressed: () => deleteProduk(item['ProdukID']),
                               ),
                             ],
                           ),
+                          // 🔹 Navigasi ke DetailProduk saat card ditekan
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => DetailProduk(produk: item),
+                              ),
+                            );
+                          },
                         ),
                       );
                     },
                   ),
-        floatingActionButton: FloatingActionButton(
-            onPressed: () {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => AddProduk()));
-            },
-            child: Icon(
-              Icons.add,
-              color: Colors.brown[300],
-            )));
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.add),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => addproduk()),
+        ).then((_) => fetchProduk()),
+      ),
+    );
   }
 }

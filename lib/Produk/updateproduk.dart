@@ -4,133 +4,60 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ukk_kasir/beranda.dart';
 
 
-class updateproduk extends StatefulWidget {
-  final int produkID;
-  const updateproduk({super.key, required this.produkID});
+class UpdateProduk extends StatefulWidget {
+  final Map<String, dynamic> produk;
+  final Function refreshProduk;
+  UpdateProduk({required this.produk, required this.refreshProduk});
 
   @override
-  State<updateproduk> createState() => _updateprodukState();
+  _UpdateProdukState createState() => _UpdateProdukState();
 }
 
-class _updateprodukState extends State<updateproduk> {
-  
-  final _nmproduk = TextEditingController();
-  final _harga = TextEditingController();
-  final _stok = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
+class _UpdateProdukState extends State<UpdateProduk> {
+  final SupabaseClient supabase = Supabase.instance.client;
+  late TextEditingController namaController;
+  late TextEditingController hargaController;
+  late TextEditingController stokController;
 
-  
   @override
   void initState() {
     super.initState();
-    _loadProdukData();
+    namaController = TextEditingController(text: widget.produk['NamaProduk']);
+    hargaController = TextEditingController(text: widget.produk['Harga'].toString());
+    stokController = TextEditingController(text: widget.produk['Stok'].toString());
   }
 
-  // Fungsi untuk memuat data produk berdasarkan ID
-  Future<void> _loadProdukData() async {
-    final data = await Supabase.instance.client
-        .from('produk')
-        .select()
-        .eq('produkID', widget.produkID)
-        .single();
-  
-    setState(() {
-      _nmproduk.text = data['NamaProduk'] ?? '';
-      _harga.text = data['Harga']?.toString() ?? '';
-      _stok.text = data['Stok']?.toString() ?? '';
-    });
-  }
-
-  // EditProduk.dart
   Future<void> updateProduk() async {
-    if (_formKey.currentState!.validate()) {
-      // Melakukan update data produk ke database
-      await Supabase.instance.client.from('produk').update({
-        'NamaProduk': _nmproduk.text,
-        'Harga': _harga.text,
-        'Stok': _stok.text,
-      }).eq('produkID', widget.produkID);
+    final nama = namaController.text.trim();
+    final harga = int.tryParse(hargaController.text.trim()) ?? 0;
+    final stok = int.tryParse(stokController.text.trim()) ?? 0;
 
-      // Navigasi ke ProdukTab setelah update, dengan menghapus semua halaman sebelumnya dari stack
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => Beranda()),
-        (route) => false, // Hapus semua halaman sebelumnya
-      );
+    if (nama.isEmpty || harga <= 0 || stok < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Data tidak valid')));
+      return;
     }
+
+    await supabase.from('produk').update({'NamaProduk': nama, 'Harga': harga, 'Stok': stok}).eq('ProdukID', widget.produk['ProdukID']);
+    widget.refreshProduk();
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Edit Produk'),
-      ),
+      appBar: AppBar(title: Text('Edit Produk')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextFormField(
-                controller: _nmproduk,
-                decoration: const InputDecoration(
-                  labelText: 'Nama Produk',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Nama tidak boleh kosong';
-                  }
-
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _harga,
-                decoration: const InputDecoration(
-                  labelText: 'Harga',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Harga tidak boleh kosong';
-                  }
-                   if (int.tryParse(value) == null) {
-                    return 'Harga harus berupa angka';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _stok,
-                decoration: const InputDecoration(
-                  labelText: 'Stok',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Stok telepon tidak boleh kosong';
-                  }
-                    if (int.tryParse(value) == null) {
-                    return 'Harga harus berupa angka';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: updateProduk,
-                child: const Text('Update'),
-              ),
-            ],
-          ),
+        child: Column(
+          children: [
+            TextField(controller: namaController, decoration: InputDecoration(labelText: 'Nama Produk')),
+            TextField(controller: hargaController, decoration: InputDecoration(labelText: 'Harga'), keyboardType: TextInputType.number),
+            TextField(controller: stokController, decoration: InputDecoration(labelText: 'Stok'), keyboardType: TextInputType.number),
+            SizedBox(height: 10),
+            ElevatedButton(onPressed: updateProduk, child: Text('Update')),
+          ],
         ),
       ),
-
     );
   }
 }

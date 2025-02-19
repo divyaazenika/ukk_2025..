@@ -2,173 +2,70 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ukk_kasir/beranda.dart';
 
-class IndexDetail extends StatefulWidget {
-  const IndexDetail({super.key});
-
+class RiwayatPenjualan extends StatefulWidget {
   @override
-  State<IndexDetail> createState() => _IndexDetailState();
+  _RiwayatPenjualanState createState() => _RiwayatPenjualanState();
 }
 
-class _IndexDetailState extends State<IndexDetail> {
-  List<Map<String, dynamic>> detail = [];
-  bool isLoading = true;
-  Map<int, bool> selectedProduk = {};
-  double totalHarga = 0.0;
+class _RiwayatPenjualanState extends State<RiwayatPenjualan> {
+  final SupabaseClient supabase = Supabase.instance.client;
+  List<Map<String, dynamic>> penjualan = [];
 
   @override
   void initState() {
     super.initState();
-    fetchdetail();
+    fetchRiwayat();
   }
 
-  Future<void> fetchdetail() async {
-    setState(() => isLoading = true);
-    try {
-      final response = await Supabase.instance.client
-          .from('detailpenjualan')
-          .select('*, penjualan(*, pelanggan(*)), produk(*)');
-
-      setState(() {
-        detail = List<Map<String, dynamic>>.from(response);
-        isLoading = false;
-      });
-    } catch (e) {
-      debugPrint("Error: $e");
-      setState(() => isLoading = false);
-    }
-  }
-
-  void toggleProdukSelection(int ProdukID, double harga) {
+  Future<void> fetchRiwayat() async {
+    final response = await supabase.from('penjualan').select();
     setState(() {
-      selectedProduk[ProdukID] = !(selectedProduk[ProdukID] ?? false);
-      totalHarga = selectedProduk[ProdukID]! ? totalHarga + harga : totalHarga - harga;
+      penjualan = List<Map<String, dynamic>>.from(response);
     });
   }
 
-  Future<void> insertDetailPenjualan() async {
-    List<Map<String, dynamic>> produkDipilih = detail.where((dtl) {
-      int? produkID = dtl['produk']?['ProdukID'] as int?;
-      return produkID != null && selectedProduk[produkID] == true;
-    }).map((dtl) {
-      return {
-        'PelangganID': dtl['pelanggan']?['PelangganID'],
-        'TotalHarga': (dtl['Subtotal'] as num?)?.toDouble() ?? 0.0,
-      };
-    }).toList();
+  Future<List<Map<String, dynamic>>> fetchDetailPenjualan(int penjualanID) async {
+    final response = await supabase
+        .from('detail_penjualan')
+        .select('ProdukID, JumlahProduk, Subtotal, produk(NamaProduk, Harga)')
+        .eq('PenjualanID', penjualanID);
 
-    if (produkDipilih.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Pilih minimal satu produk!")),
-      );
-      return;
-    }
-
-    try {
-      await Supabase.instance.client.from('penjualan').insert(produkDipilih);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Produk berhasil dipesan!")),
-      );
-      setState(() {
-        selectedProduk.clear();
-        totalHarga = 0.0;
-      });
-    } catch (e) {
-      debugPrint("Error saat insert: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Gagal memesan produk: $e")),
-      );
-    }
-  }
-
-  void showOrderDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Pilih Opsi"),
-        content: Text("Ingin memesan sekarang atau mencetak PDF?"),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              insertDetailPenjualan();
-            },
-            child: Text("Pesan Sekarang"),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: Text("Cetak PDF"),
-          ),
-        ],
-      ),
-    );
+    return List<Map<String, dynamic>>.from(response.map((item) => {
+          'NamaProduk': item['produk']['NamaProduk'],
+          'Harga': item['produk']['Harga'],
+          'JumlahProduk': item['JumlahProduk'],
+          'Subtotal': item['Subtotal'],
+        }));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: detail.isEmpty
-          ? Center(child: Text('Penjualan belum ditambahkan', style: TextStyle(fontSize: 18)))
-          : Column(
-              children: [
-                Expanded(
-                  child: ListView.builder(
-                    padding: EdgeInsets.all(8),
-                    itemCount: detail.length,
-                    itemBuilder: (context, index) {
-                      final dtl = detail[index];
-                      int produkID = dtl['produk']?['ProdukID'] ?? 0;
-                      double harga = (dtl['Subtotal'] as num?)?.toDouble() ?? 0.0;
-                      return Card(
-                        key: ValueKey(produkID),
-                        elevation: 4,
-                        margin: EdgeInsets.symmetric(vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        child: ListTile(
-                          title: Text(
-                            'Nama Produk: ${dtl['produk']?['NamaProduk'] ?? '-'}',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Nama Pelanggan: ${dtl['penjualan']?['pelanggan']?['NamaPelanggan'] ?? '-'}',
-                              ),
-                              Text('Jumlah Produk: ${dtl['JumlahProduk'] ?? 'tidak tersedia'}'),
-                              Text(
-                                'Total Harga: Rp${harga.toStringAsFixed(2)}',
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                // Menampilkan total harga jika ada produk yang dipilih
-                if (totalHarga > 0)
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      'Total Harga: Rp ${totalHarga.toStringAsFixed(2)}',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-                    ),
-                  ),
-              ],
+      appBar: AppBar(title: Text("Riwayat Penjualan")),
+      body: penjualan.isEmpty
+          ? Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: penjualan.length,
+              itemBuilder: (context, index) {
+                final item = penjualan[index];
+                return ListTile(
+                  title: Text("Penjualan ${item['PenjualanID']}"),
+                  subtitle: Text("Total: Rp ${item['TotalHarga']}"),
+                  onTap: () async {
+                    List<Map<String, dynamic>> detailProduk =
+                        await fetchDetailPenjualan(item['PenjualanID']);
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            RiwayatPenjualan(),
+                      ),
+                    );
+                  },
+                );
+              },
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Navigasi ke halaman penambahan detail penjualan
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => Beranda()),
-          );
-        },
-        backgroundColor: Colors.brown[500],
-        child: Icon(Icons.add),
-      ),
     );
   }
 }
